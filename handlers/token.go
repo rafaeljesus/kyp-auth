@@ -3,9 +3,7 @@ package handlers
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
-	"github.com/rafaeljesus/kyp-auth/db"
 	"github.com/rafaeljesus/kyp-auth/models"
-	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"time"
 )
@@ -20,23 +18,16 @@ func TokenCreate(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, "Unauthorized")
 	}
 
-	user := models.User{}
-	if err := db.Repo.Where("email = ?", u.Email).Find(&user).Error; err != nil {
+	user := &models.User{}
+	if err := user.FindByEmail(u.Email).Error; err != nil {
 		return c.JSON(http.StatusUnauthorized, "Unauthorized")
 	}
 
-	if invalid, _ := verifyPassword(user, u.Password); !invalid {
+	if invalid, _ := user.VerifyPassword(u.Password); !invalid {
 		return c.JSON(http.StatusUnauthorized, "Unauthorized")
 	}
 
-	claims := &jwtCustomClaims{
-		u.Email,
-		0,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
-		},
-	}
-
+	claims := newJwtCustomClaims(u.Email)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	t, err := token.SignedString([]byte("secret"))
@@ -53,10 +44,16 @@ type jwtCustomClaims struct {
 	jwt.StandardClaims
 }
 
-type tokenResponse struct {
-	Token string `json:"token"`
+func newJwtCustomClaims(email string) *jwtCustomClaims {
+	return &jwtCustomClaims{
+		email,
+		0,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		},
+	}
 }
 
-func verifyPassword(u models.User, password string) (bool, error) {
-	return bcrypt.CompareHashAndPassword(u.EncryptedPassword, []byte(password)) == nil, nil
+type tokenResponse struct {
+	Token string `json:"token"`
 }
