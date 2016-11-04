@@ -4,13 +4,17 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/rafaeljesus/kyp-auth/db"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
 type User struct {
-	gorm.Model
-	Email             string `json:"email" valid:"email"`
-	Password          string `json:"password,omitempty"`
-	EncryptedPassword []byte `json:"-" sql:"encrypted_password;not null"`
+	Id                uint       `json:"id", sql:"primary_key"`
+	Email             string     `json:"email" valid:"email"`
+	Password          string     `json:"password,omitempty"`
+	EncryptedPassword []byte     `json:"-" sql:"encrypted_password;not null"`
+	CreatedAt         time.Time  `json:"created_at", sql:"not null"`
+	UpdatedAt         time.Time  `json:"updated_at", sql:"not null`
+	DeletedAt         *time.Time `json:"-" "created_at"`
 }
 
 func (u *User) Create() *gorm.DB {
