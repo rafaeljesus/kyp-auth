@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/rafaeljesus/kyp-auth/models"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -30,7 +31,7 @@ func TokenCreate(c echo.Context) error {
 	claims := newJwtCustomClaims(u.Email)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	t, err := token.SignedString([]byte("secret"))
+	t, err := token.SignedString([]byte(os.Getenv("KYP_SECRET_KEY")))
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, "Unauthorized")
 	}
