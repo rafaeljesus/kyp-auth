@@ -3,37 +3,36 @@ package handlers
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
-	"github.com/rafaeljesus/kyp-auth/models"
+	"github.com/rafaeljesus/kyp-auth/resources"
 	"net/http"
 	"os"
 	"time"
 )
 
+const UNAUTHORIZED = "Unauthorized"
+
+var KYP_SECRET_KEY = os.Getenv("KYP_SECRET_KEY")
+
 func TokenCreate(c echo.Context) error {
-	u := models.User{}
+	u := resources.User{}
 	if err := c.Bind(&u); err != nil {
 		return err
 	}
 
 	if u.Email == "" {
-		return c.JSON(http.StatusUnauthorized, "Unauthorized")
+		return c.JSON(http.StatusUnauthorized, UNAUTHORIZED)
 	}
 
-	user := &models.User{}
-	if err := user.FindByEmail(u.Email).Error; err != nil {
-		return c.JSON(http.StatusUnauthorized, "Unauthorized")
-	}
-
-	if invalid, _ := user.VerifyPassword(u.Password); !invalid {
-		return c.JSON(http.StatusUnauthorized, "Unauthorized")
+	user := resources.User{}
+	if err := user.Authenticate(u.Email, u.Password); err != nil {
+		return c.JSON(http.StatusUnauthorized, UNAUTHORIZED)
 	}
 
 	claims := newJwtCustomClaims(u.Email)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	t, err := token.SignedString([]byte(os.Getenv("KYP_SECRET_KEY")))
+	t, err := token.SignedString([]byte(KYP_SECRET_KEY))
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, "Unauthorized")
+		return c.JSON(http.StatusUnauthorized, UNAUTHORIZED)
 	}
 
 	return c.JSON(http.StatusOK, &tokenResponse{Token: t})
