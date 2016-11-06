@@ -3,17 +3,14 @@ package resources
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/rafaeljesus/kyp-structs"
 	"net/http"
 	"os"
 )
 
 var KYP_USERS_ENDPOINT = os.Getenv("KYP_USERS_ENDPOINT")
 
-type User struct {
-	Email             string `json:"email"`
-	Password          string `json:"password,omitempty"`
-	EncryptedPassword []byte `json:"-"`
-}
+type User structs.User
 
 func (u *User) Authenticate(email string, password string) error {
 	user := User{Email: email, Password: password}
